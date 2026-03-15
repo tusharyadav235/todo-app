@@ -1,0 +1,26 @@
+# Maven
+backend/target/
+backend/*.jar
+backend/*.war
+
+# IDE files
+.idea/
+*.iml
+.vscode/
+*.class
+
+# Docker
+.docker/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Environment files (secrets kabhi commit mat karo!)
+.env
+*.pem
+*.key

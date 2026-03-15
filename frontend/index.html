@@ -1,0 +1,763 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>मेरा Todo App</title>
+    <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;500;600;700;800&family=Noto+Sans+Devanagari:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0f0f1a;
+            --surface: #1a1a2e;
+            --card: #16213e;
+            --accent: #e94560;
+            --accent2: #f5a623;
+            --accent3: #4ecca3;
+            --text: #eaeaea;
+            --text-muted: #888;
+            --border: rgba(255,255,255,0.07);
+            --success: #4ecca3;
+            --danger: #e94560;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'Noto Sans Devanagari', sans-serif;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Animated background */
+        body::before {
+            content: '';
+            position: fixed;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(ellipse at 20% 50%, rgba(233,69,96,0.08) 0%, transparent 50%),
+                        radial-gradient(ellipse at 80% 20%, rgba(78,204,163,0.06) 0%, transparent 50%),
+                        radial-gradient(ellipse at 50% 80%, rgba(245,166,35,0.05) 0%, transparent 50%);
+            animation: bgPulse 8s ease-in-out infinite alternate;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        @keyframes bgPulse {
+            0% { transform: scale(1) rotate(0deg); }
+            100% { transform: scale(1.1) rotate(2deg); }
+        }
+
+        .container {
+            max-width: 720px;
+            margin: 0 auto;
+            padding: 2rem 1rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Header */
+        header {
+            text-align: center;
+            margin-bottom: 2.5rem;
+            animation: fadeDown 0.6s ease;
+        }
+
+        @keyframes fadeDown {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .logo {
+            font-family: 'Baloo 2', cursive;
+            font-size: 3rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--accent), var(--accent2), var(--accent3));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            line-height: 1;
+            margin-bottom: 0.3rem;
+        }
+
+        .subtitle {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            letter-spacing: 0.1em;
+        }
+
+        /* Stats bar */
+        .stats {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            animation: fadeUp 0.6s ease 0.1s both;
+        }
+
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .stat-card {
+            flex: 1;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1rem;
+            text-align: center;
+            transition: transform 0.2s;
+        }
+
+        .stat-card:hover { transform: translateY(-2px); }
+
+        .stat-number {
+            font-family: 'Baloo 2', cursive;
+            font-size: 2rem;
+            font-weight: 700;
+            line-height: 1;
+        }
+
+        .stat-card:nth-child(1) .stat-number { color: var(--accent2); }
+        .stat-card:nth-child(2) .stat-number { color: var(--accent3); }
+        .stat-card:nth-child(3) .stat-number { color: var(--accent); }
+
+        .stat-label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-top: 0.2rem;
+        }
+
+        /* Input area */
+        .input-section {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            animation: fadeUp 0.6s ease 0.2s both;
+        }
+
+        .input-row {
+            display: flex;
+            gap: 0.75rem;
+            margin-bottom: 0.75rem;
+        }
+
+        input[type="text"], textarea {
+            background: var(--card);
+            border: 1px solid var(--border);
+            color: var(--text);
+            border-radius: 10px;
+            padding: 0.75rem 1rem;
+            font-family: 'Noto Sans Devanagari', sans-serif;
+            font-size: 0.95rem;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            outline: none;
+            width: 100%;
+        }
+
+        input[type="text"]:focus, textarea:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(233,69,96,0.12);
+        }
+
+        textarea { resize: none; height: 70px; }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 10px;
+            font-family: 'Baloo 2', cursive;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent), #c73652);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 16px rgba(233,69,96,0.4);
+        }
+
+        .btn-primary:active { transform: scale(0.97); }
+
+        /* Filter tabs */
+        .filter-tabs {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1.25rem;
+            animation: fadeUp 0.6s ease 0.3s both;
+        }
+
+        .tab {
+            padding: 0.5rem 1.2rem;
+            border-radius: 50px;
+            border: 1px solid var(--border);
+            background: transparent;
+            color: var(--text-muted);
+            font-family: 'Noto Sans Devanagari', sans-serif;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .tab.active, .tab:hover {
+            background: var(--accent);
+            color: white;
+            border-color: var(--accent);
+        }
+
+        /* Todo list */
+        .todo-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .todo-item {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 1rem 1.25rem;
+            display: flex;
+            align-items: flex-start;
+            gap: 1rem;
+            animation: slideIn 0.3s ease;
+            transition: all 0.2s;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(-16px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        .todo-item:hover {
+            border-color: rgba(233,69,96,0.3);
+            transform: translateX(4px);
+        }
+
+        .todo-item.completed {
+            opacity: 0.6;
+            border-left: 3px solid var(--accent3);
+        }
+
+        /* Custom checkbox */
+        .checkbox-wrap {
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+
+        .checkbox-wrap input { display: none; }
+
+        .checkbox-wrap label {
+            width: 22px;
+            height: 22px;
+            border: 2px solid var(--border);
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 12px;
+        }
+
+        .checkbox-wrap input:checked + label {
+            background: var(--accent3);
+            border-color: var(--accent3);
+            color: #0f0f1a;
+        }
+
+        .todo-content { flex: 1; min-width: 0; }
+
+        .todo-title {
+            font-weight: 500;
+            font-size: 1rem;
+            line-height: 1.4;
+            word-break: break-word;
+        }
+
+        .todo-item.completed .todo-title {
+            text-decoration: line-through;
+            color: var(--text-muted);
+        }
+
+        .todo-desc {
+            font-size: 0.82rem;
+            color: var(--text-muted);
+            margin-top: 0.25rem;
+            word-break: break-word;
+        }
+
+        .todo-date {
+            font-size: 0.72rem;
+            color: rgba(136,136,136,0.6);
+            margin-top: 0.3rem;
+        }
+
+        .todo-actions {
+            display: flex;
+            gap: 0.4rem;
+            flex-shrink: 0;
+        }
+
+        .icon-btn {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            background: transparent;
+            color: var(--text-muted);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+
+        .icon-btn:hover { background: var(--card); color: var(--text); }
+        .icon-btn.delete:hover { background: rgba(233,69,96,0.15); color: var(--accent); border-color: var(--accent); }
+        .icon-btn.edit:hover { background: rgba(245,166,35,0.15); color: var(--accent2); border-color: var(--accent2); }
+
+        /* Empty state */
+        .empty-state {
+            text-align: center;
+            padding: 3rem 1rem;
+            color: var(--text-muted);
+            animation: fadeUp 0.5s ease;
+        }
+
+        .empty-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            opacity: 0.4;
+        }
+
+        /* Loading */
+        .loading {
+            text-align: center;
+            padding: 2rem;
+            color: var(--text-muted);
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 28px;
+            height: 28px;
+            border: 3px solid var(--border);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 0.7s linear infinite;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Toast notification */
+        .toast {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            padding: 0.75rem 1.25rem;
+            border-radius: 10px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            z-index: 1000;
+            animation: toastIn 0.3s ease;
+            max-width: 300px;
+        }
+
+        @keyframes toastIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .toast.success { background: var(--accent3); color: #0f0f1a; }
+        .toast.error { background: var(--accent); color: white; }
+
+        /* Edit modal */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.7);
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+            backdrop-filter: blur(4px);
+            animation: fadeIn 0.2s ease;
+        }
+
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        .modal {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 2rem;
+            width: 100%;
+            max-width: 460px;
+            animation: modalIn 0.3s ease;
+        }
+
+        @keyframes modalIn {
+            from { opacity: 0; transform: scale(0.9); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        .modal h3 {
+            font-family: 'Baloo 2', cursive;
+            font-size: 1.3rem;
+            margin-bottom: 1.25rem;
+            color: var(--accent2);
+        }
+
+        .modal .input-group { margin-bottom: 1rem; }
+        .modal label { font-size: 0.8rem; color: var(--text-muted); display: block; margin-bottom: 0.4rem; }
+
+        .modal-actions { display: flex; gap: 0.75rem; margin-top: 1.25rem; justify-content: flex-end; }
+
+        .btn-secondary {
+            background: var(--card);
+            color: var(--text-muted);
+            border: 1px solid var(--border);
+        }
+
+        .btn-secondary:hover { color: var(--text); }
+
+        /* API connection warning */
+        .api-warning {
+            background: rgba(245,166,35,0.1);
+            border: 1px solid rgba(245,166,35,0.3);
+            border-radius: 10px;
+            padding: 0.75rem 1rem;
+            font-size: 0.82rem;
+            color: var(--accent2);
+            margin-bottom: 1rem;
+            display: none;
+        }
+
+        @media (max-width: 480px) {
+            .logo { font-size: 2.2rem; }
+            .stats { flex-direction: row; }
+            .input-row { flex-direction: column; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <div class="logo">✓ Todo App</div>
+        <div class="subtitle">अपने कामों को मैनेज करो</div>
+    </header>
+
+    <!-- Stats -->
+    <div class="stats">
+        <div class="stat-card">
+            <div class="stat-number" id="totalCount">0</div>
+            <div class="stat-label">कुल काम</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number" id="doneCount">0</div>
+            <div class="stat-label">पूरे हुए</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number" id="pendingCount">0</div>
+            <div class="stat-label">बाकी हैं</div>
+        </div>
+    </div>
+
+    <!-- API Warning -->
+    <div class="api-warning" id="apiWarning">
+        ⚠️ Backend से connect नहीं हो पाया। Demo mode में चल रहा है (data refresh पर reset होगा)।
+    </div>
+
+    <!-- Input Section -->
+    <div class="input-section">
+        <div class="input-row">
+            <input type="text" id="titleInput" placeholder="नया काम लिखो... (जैसे: किताब पढ़नी है)" />
+            <button class="btn btn-primary" onclick="addTodo()">+ जोड़ो</button>
+        </div>
+        <textarea id="descInput" placeholder="विवरण (optional) — थोड़ा और बताओ..."></textarea>
+    </div>
+
+    <!-- Filter Tabs -->
+    <div class="filter-tabs">
+        <button class="tab active" onclick="setFilter('all', this)">सभी</button>
+        <button class="tab" onclick="setFilter('pending', this)">बाकी</button>
+        <button class="tab" onclick="setFilter('completed', this)">पूरे हुए</button>
+    </div>
+
+    <!-- Todo List -->
+    <div class="todo-list" id="todoList">
+        <div class="loading"><div class="spinner"></div></div>
+    </div>
+</div>
+
+<!-- Edit Modal -->
+<div class="modal-overlay" id="editModal" style="display:none" onclick="closeModal(event)">
+    <div class="modal">
+        <h3>✏️ Todo बदलो</h3>
+        <div class="input-group">
+            <label>काम का नाम</label>
+            <input type="text" id="editTitle" />
+        </div>
+        <div class="input-group">
+            <label>विवरण</label>
+            <textarea id="editDesc"></textarea>
+        </div>
+        <div class="modal-actions">
+            <button class="btn btn-secondary" onclick="document.getElementById('editModal').style.display='none'">रद्द करो</button>
+            <button class="btn btn-primary" onclick="saveEdit()">सेव करो</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // ====================================================
+    // CONFIGURATION — Apna EC2 IP yahan daalo
+    // ====================================================
+    const API_BASE = 'http://localhost:8080/api/todos';
+    // Production mein: const API_BASE = 'http://YOUR_EC2_IP:8080/api/todos';
+
+    let todos = [];
+    let currentFilter = 'all';
+    let editingId = null;
+    let useLocalMode = false;
+    let localIdCounter = 1;
+
+    // ====================================================
+    // API CALLS
+    // ====================================================
+    async function apiCall(url, options = {}) {
+        if (useLocalMode) return null;
+        try {
+            const res = await fetch(url, {
+                ...options,
+                headers: { 'Content-Type': 'application/json', ...options.headers }
+            });
+            if (!res.ok) throw new Error('API error');
+            if (res.status === 204) return true;
+            return await res.json();
+        } catch (e) {
+            return null;
+        }
+    }
+
+    async function loadTodos() {
+        const data = await apiCall(API_BASE);
+        if (data === null) {
+            // Backend nahi mila — local mode mein chalo
+            useLocalMode = true;
+            document.getElementById('apiWarning').style.display = 'block';
+            todos = getSampleTodos();
+        } else {
+            todos = data;
+        }
+        renderTodos();
+        updateStats();
+    }
+
+    function getSampleTodos() {
+        return [
+            { id: localIdCounter++, title: 'Backend API test karo', description: 'Postman se saare endpoints test karo', completed: false, createdAt: new Date().toISOString() },
+            { id: localIdCounter++, title: 'Docker image build karo', description: 'docker build -t todo-app .', completed: true, createdAt: new Date().toISOString() },
+            { id: localIdCounter++, title: 'EC2 instance setup karo', description: 'Security groups mein port 8080 aur 80 kholo', completed: false, createdAt: new Date().toISOString() },
+        ];
+    }
+
+    async function addTodo() {
+        const title = document.getElementById('titleInput').value.trim();
+        const description = document.getElementById('descInput').value.trim();
+
+        if (!title) {
+            showToast('काम का नाम लिखो!', 'error');
+            document.getElementById('titleInput').focus();
+            return;
+        }
+
+        const newTodo = { title, description, completed: false };
+
+        if (useLocalMode) {
+            todos.unshift({ ...newTodo, id: localIdCounter++, createdAt: new Date().toISOString() });
+        } else {
+            const created = await apiCall(API_BASE, {
+                method: 'POST',
+                body: JSON.stringify(newTodo)
+            });
+            if (created) todos.unshift(created);
+            else { showToast('Error! Todo नहीं बना।', 'error'); return; }
+        }
+
+        document.getElementById('titleInput').value = '';
+        document.getElementById('descInput').value = '';
+        renderTodos();
+        updateStats();
+        showToast('Todo जोड़ दिया गया! ✓', 'success');
+    }
+
+    async function toggleTodo(id) {
+        if (useLocalMode) {
+            todos = todos.map(t => t.id === id ? { ...t, completed: !t.completed } : t);
+        } else {
+            const updated = await apiCall(`${API_BASE}/${id}/toggle`, { method: 'PATCH' });
+            if (updated) todos = todos.map(t => t.id === id ? updated : t);
+        }
+        renderTodos();
+        updateStats();
+    }
+
+    async function deleteTodo(id) {
+        if (!confirm('क्या सच में delete करना है?')) return;
+        if (useLocalMode) {
+            todos = todos.filter(t => t.id !== id);
+        } else {
+            await apiCall(`${API_BASE}/${id}`, { method: 'DELETE' });
+            todos = todos.filter(t => t.id !== id);
+        }
+        renderTodos();
+        updateStats();
+        showToast('Todo delete हो गया।', 'success');
+    }
+
+    function openEdit(id) {
+        const todo = todos.find(t => t.id === id);
+        if (!todo) return;
+        editingId = id;
+        document.getElementById('editTitle').value = todo.title;
+        document.getElementById('editDesc').value = todo.description || '';
+        document.getElementById('editModal').style.display = 'flex';
+    }
+
+    async function saveEdit() {
+        const title = document.getElementById('editTitle').value.trim();
+        const description = document.getElementById('editDesc').value.trim();
+        if (!title) { showToast('नाम खाली नहीं छोड़ सकते!', 'error'); return; }
+
+        const current = todos.find(t => t.id === editingId);
+        const updated = { ...current, title, description };
+
+        if (useLocalMode) {
+            todos = todos.map(t => t.id === editingId ? updated : t);
+        } else {
+            const res = await apiCall(`${API_BASE}/${editingId}`, {
+                method: 'PUT',
+                body: JSON.stringify(updated)
+            });
+            if (res) todos = todos.map(t => t.id === editingId ? res : t);
+        }
+
+        document.getElementById('editModal').style.display = 'none';
+        renderTodos();
+        showToast('Todo update हो गया! ✓', 'success');
+    }
+
+    function closeModal(e) {
+        if (e.target.id === 'editModal') {
+            document.getElementById('editModal').style.display = 'none';
+        }
+    }
+
+    // ====================================================
+    // RENDER
+    // ====================================================
+    function setFilter(filter, btn) {
+        currentFilter = filter;
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        btn.classList.add('active');
+        renderTodos();
+    }
+
+    function getFilteredTodos() {
+        if (currentFilter === 'completed') return todos.filter(t => t.completed);
+        if (currentFilter === 'pending') return todos.filter(t => !t.completed);
+        return todos;
+    }
+
+    function renderTodos() {
+        const list = document.getElementById('todoList');
+        const filtered = getFilteredTodos();
+
+        if (filtered.length === 0) {
+            const msgs = {
+                all: { icon: '📋', text: 'कोई काम नहीं है। ऊपर से नया काम जोड़ो!' },
+                pending: { icon: '🎉', text: 'वाह! सारे काम पूरे हो गए!' },
+                completed: { icon: '⏳', text: 'अभी कोई काम पूरा नहीं हुआ।' }
+            };
+            const m = msgs[currentFilter];
+            list.innerHTML = `<div class="empty-state"><div class="empty-icon">${m.icon}</div><p>${m.text}</p></div>`;
+            return;
+        }
+
+        list.innerHTML = filtered.map(todo => {
+            const date = todo.createdAt
+                ? new Date(todo.createdAt).toLocaleDateString('hi-IN', { day: 'numeric', month: 'long' })
+                : '';
+            return `
+            <div class="todo-item ${todo.completed ? 'completed' : ''}" id="todo-${todo.id}">
+                <div class="checkbox-wrap">
+                    <input type="checkbox" id="chk-${todo.id}" ${todo.completed ? 'checked' : ''} onchange="toggleTodo(${todo.id})">
+                    <label for="chk-${todo.id}">✓</label>
+                </div>
+                <div class="todo-content">
+                    <div class="todo-title">${escapeHtml(todo.title)}</div>
+                    ${todo.description ? `<div class="todo-desc">${escapeHtml(todo.description)}</div>` : ''}
+                    ${date ? `<div class="todo-date">${date}</div>` : ''}
+                </div>
+                <div class="todo-actions">
+                    <button class="icon-btn edit" onclick="openEdit(${todo.id})" title="Edit karo">✏️</button>
+                    <button class="icon-btn delete" onclick="deleteTodo(${todo.id})" title="Delete karo">🗑️</button>
+                </div>
+            </div>`;
+        }).join('');
+    }
+
+    function updateStats() {
+        const total = todos.length;
+        const done = todos.filter(t => t.completed).length;
+        document.getElementById('totalCount').textContent = total;
+        document.getElementById('doneCount').textContent = done;
+        document.getElementById('pendingCount').textContent = total - done;
+    }
+
+    function escapeHtml(str) {
+        return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    // ====================================================
+    // TOAST
+    // ====================================================
+    function showToast(msg, type = 'success') {
+        const existing = document.querySelector('.toast');
+        if (existing) existing.remove();
+        const toast = document.createElement('div');
+        toast.className = `toast ${type}`;
+        toast.textContent = msg;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 2800);
+    }
+
+    // Enter key se todo add karo
+    document.getElementById('titleInput').addEventListener('keydown', e => {
+        if (e.key === 'Enter') addTodo();
+    });
+
+    // ====================================================
+    // INIT
+    // ====================================================
+    loadTodos();
+</script>
+</body>
+</html>
