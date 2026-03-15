@@ -3,6 +3,7 @@ services:
   backend:
     image: tusharyadaav/todo-backend:latest
     container_name: todo-backend
+    pull_policy: always
     ports:
       - "8080:8080"
     restart: unless-stopped
@@ -12,6 +13,7 @@ services:
   frontend:
     image: tusharyadaav/todo-frontend:latest
     container_name: todo-frontend
+    pull_policy: always
     ports:
       - "80:80"
     depends_on:

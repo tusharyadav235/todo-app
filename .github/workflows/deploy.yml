@@ -21,10 +21,10 @@ jobs:
 
     steps:
       - name: Code checkout karo
-        uses: actions/checkout@v4.2.2          # ✅ Node.js 24 compatible
+        uses: actions/checkout@v4.2.2
 
       - name: Java 17 setup karo
-        uses: actions/setup-java@v4.7.0        # ✅ Node.js 24 compatible
+        uses: actions/setup-java@v4.7.0
         with:
           java-version: '17'
           distribution: 'temurin'
@@ -36,12 +36,12 @@ jobs:
           mvn clean test -B
 
       - name: Test results upload karo
-        uses: actions/upload-artifact@v4.6.2   # ✅ Node.js 24 compatible
+        uses: actions/upload-artifact@v4.6.2
         if: always()
         with:
           name: test-results
           path: backend/target/surefire-reports/
-          if-no-files-found: ignore            # ✅ Warning fix — files na ho toh skip karo
+          if-no-files-found: ignore
 
   # ============================================
   # JOB 2: DOCKER IMAGES BUILD & PUSH
@@ -54,19 +54,19 @@ jobs:
 
     steps:
       - name: Code checkout karo
-        uses: actions/checkout@v4.2.2          # ✅ Node.js 24 compatible
+        uses: actions/checkout@v4.2.2
 
       - name: Docker Hub login karo
-        uses: docker/login-action@v3.4.0       # ✅ Node.js 24 compatible
+        uses: docker/login-action@v3.4.0
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
       - name: Docker Buildx setup karo
-        uses: docker/setup-buildx-action@v3.10.0  # ✅ Node.js 24 compatible
+        uses: docker/setup-buildx-action@v3.10.0
 
       - name: Backend Docker image build & push karo
-        uses: docker/build-push-action@v6.15.0    # ✅ v6 — Node.js 24 compatible
+        uses: docker/build-push-action@v6.15.0
         with:
           context: ./backend
           push: true
@@ -77,7 +77,7 @@ jobs:
           cache-to: type=gha,mode=max
 
       - name: Frontend Docker image build & push karo
-        uses: docker/build-push-action@v6.15.0    # ✅ v6 — Node.js 24 compatible
+        uses: docker/build-push-action@v6.15.0
         with:
           context: ./frontend
           push: true
@@ -98,7 +98,7 @@ jobs:
 
     steps:
       - name: Code checkout karo
-        uses: actions/checkout@v4.2.2          # ✅ Node.js 24 compatible
+        uses: actions/checkout@v4.2.2
 
       - name: docker-compose.yml EC2 par bhejo
         uses: appleboy/scp-action@v0.1.7
@@ -118,15 +118,19 @@ jobs:
           script: |
             cd /home/ubuntu/todo-app
 
-            echo "Latest images pull ho rahe hain..."
-            docker pull ${{ env.BACKEND_IMAGE }}:latest
-            docker pull ${{ env.FRONTEND_IMAGE }}:latest
-
             # Purane containers band karo
             docker compose down --remove-orphans
 
-            # Nayi images se start karo (--pull always = fresh image lega)
-            docker compose up -d --pull always
+            # Purani images force delete karo (taaki cached wali na chale)
+            docker rmi $(docker images '${{ env.BACKEND_IMAGE }}' -q) 2>/dev/null || true
+            docker rmi $(docker images '${{ env.FRONTEND_IMAGE }}' -q) 2>/dev/null || true
+
+            # Docker Hub se bilkul fresh images pull karo
+            docker pull ${{ env.BACKEND_IMAGE }}:latest
+            docker pull ${{ env.FRONTEND_IMAGE }}:latest
+
+            # Nayi images se containers start karo
+            docker compose up -d
 
             # Health check
             sleep 15
@@ -134,7 +138,7 @@ jobs:
             curl -f http://localhost:8080/api/todos/health || exit 1
             echo "Deploy successful!"
 
-            # Purani dangling images saaf karo
+            # Baaki dangling images bhi saaf karo
             docker image prune -f
 
   # ============================================
