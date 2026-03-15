@@ -7,9 +7,8 @@ on:
     branches: [ main ]
 
 env:
-  DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
-  BACKEND_IMAGE: ${{ secrets.DOCKER_USERNAME }}/todo-backend
-  FRONTEND_IMAGE: ${{ secrets.DOCKER_USERNAME }}/todo-frontend
+  BACKEND_IMAGE: tusharyadaav/todo-backend
+  FRONTEND_IMAGE: tusharyadaav/todo-frontend
 
 jobs:
   # ============================================
@@ -121,24 +120,24 @@ jobs:
             # Purane containers band karo
             docker compose down --remove-orphans
 
-            # Purani images force delete karo (taaki cached wali na chale)
-            docker rmi $(docker images '${{ env.BACKEND_IMAGE }}' -q) 2>/dev/null || true
-            docker rmi $(docker images '${{ env.FRONTEND_IMAGE }}' -q) 2>/dev/null || true
+            # Purani images force delete karo
+            docker rmi tusharyadaav/todo-backend:latest 2>/dev/null || true
+            docker rmi tusharyadaav/todo-frontend:latest 2>/dev/null || true
 
             # Docker Hub se bilkul fresh images pull karo
-            docker pull ${{ env.BACKEND_IMAGE }}:latest
-            docker pull ${{ env.FRONTEND_IMAGE }}:latest
+            docker pull tusharyadaav/todo-backend:latest
+            docker pull tusharyadaav/todo-frontend:latest
 
             # Nayi images se containers start karo
             docker compose up -d
 
-            # Health check
+            # Health check — backend ready hone ka wait karo
             sleep 15
             echo "Health check..."
             curl -f http://localhost:8080/api/todos/health || exit 1
             echo "Deploy successful!"
 
-            # Baaki dangling images bhi saaf karo
+            # Dangling images saaf karo
             docker image prune -f
 
   # ============================================
