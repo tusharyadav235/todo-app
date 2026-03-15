@@ -21,10 +21,10 @@ jobs:
 
     steps:
       - name: Code checkout karo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v4.2.2          # ✅ Node.js 24 compatible
 
       - name: Java 17 setup karo
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v4.7.0        # ✅ Node.js 24 compatible
         with:
           java-version: '17'
           distribution: 'temurin'
@@ -34,13 +34,14 @@ jobs:
         run: |
           cd backend
           mvn clean test -B
-        
+
       - name: Test results upload karo
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v4.6.2   # ✅ Node.js 24 compatible
         if: always()
         with:
           name: test-results
           path: backend/target/surefire-reports/
+          if-no-files-found: ignore            # ✅ Warning fix — files na ho toh skip karo
 
   # ============================================
   # JOB 2: DOCKER IMAGES BUILD & PUSH
@@ -53,19 +54,19 @@ jobs:
 
     steps:
       - name: Code checkout karo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v4.2.2          # ✅ Node.js 24 compatible
 
       - name: Docker Hub login karo
-        uses: docker/login-action@v3
+        uses: docker/login-action@v3.4.0       # ✅ Node.js 24 compatible
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
       - name: Docker Buildx setup karo
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v3.10.0  # ✅ Node.js 24 compatible
 
       - name: Backend Docker image build & push karo
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6.15.0    # ✅ v6 — Node.js 24 compatible
         with:
           context: ./backend
           push: true
@@ -76,7 +77,7 @@ jobs:
           cache-to: type=gha,mode=max
 
       - name: Frontend Docker image build & push karo
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6.15.0    # ✅ v6 — Node.js 24 compatible
         with:
           context: ./frontend
           push: true
@@ -96,11 +97,11 @@ jobs:
     if: github.ref == 'refs/heads/main'
 
     steps:
-      - name: Code checkout karo (docker-compose ke liye)
-        uses: actions/checkout@v4
+      - name: Code checkout karo
+        uses: actions/checkout@v4.2.2          # ✅ Node.js 24 compatible
 
       - name: docker-compose.yml EC2 par bhejo
-        uses: appleboy/scp-action@master
+        uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ubuntu
@@ -109,37 +110,31 @@ jobs:
           target: "/home/ubuntu/todo-app"
 
       - name: EC2 par deploy karo (SSH se)
-        uses: appleboy/ssh-action@master
+        uses: appleboy/ssh-action@v1.2.0
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
-            # Project directory mein jao
             cd /home/ubuntu/todo-app
 
-            # Docker Hub se latest images khicho
-            echo "Docker images pull ho rahe hain..."
+            echo "Latest images pull ho rahe hain..."
             docker pull ${{ env.BACKEND_IMAGE }}:latest
             docker pull ${{ env.FRONTEND_IMAGE }}:latest
-
-            # docker-compose.yml mein latest image tags set karo
-            export BACKEND_IMAGE=${{ env.BACKEND_IMAGE }}
-            export FRONTEND_IMAGE=${{ env.FRONTEND_IMAGE }}
 
             # Purane containers band karo
             docker compose down --remove-orphans
 
-            # Nayi images se start karo
-            docker compose up -d
+            # Nayi images se start karo (--pull always = fresh image lega)
+            docker compose up -d --pull always
 
-            # Health check karo
+            # Health check
             sleep 15
             echo "Health check..."
             curl -f http://localhost:8080/api/todos/health || exit 1
-            echo "Deploy successful! App chal raha hai."
+            echo "Deploy successful!"
 
-            # Purani images saaf karo
+            # Purani dangling images saaf karo
             docker image prune -f
 
   # ============================================
@@ -154,8 +149,8 @@ jobs:
     steps:
       - name: Success message
         if: needs.deploy-to-ec2.result == 'success'
-        run: echo "Deploy ho gaya! App EC2 par chal raha hai."
-      
+        run: echo "✅ Deploy ho gaya! App EC2 par chal raha hai."
+
       - name: Failure message
         if: needs.deploy-to-ec2.result == 'failure'
-        run: echo "Deploy fail ho gaya. Logs check karo!"
+        run: echo "❌ Deploy fail ho gaya. Logs check karo!"
