@@ -19,22 +19,22 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Code checkout karo
+      - name: Code checkout
         uses: actions/checkout@v4.2.2
 
-      - name: Java 17 setup karo
+      - name: Java 17 setup
         uses: actions/setup-java@v4.7.0
         with:
           java-version: '17'
           distribution: 'temurin'
           cache: maven
 
-      - name: Maven build & test karo
+      - name: Maven build & test 
         run: |
           cd backend
           mvn clean test -B
 
-      - name: Test results upload karo
+      - name: Test results upload 
         uses: actions/upload-artifact@v4.6.2
         if: always()
         with:
@@ -52,19 +52,19 @@ jobs:
     if: github.ref == 'refs/heads/main'
 
     steps:
-      - name: Code checkout karo
+      - name: Code checkout 
         uses: actions/checkout@v4.2.2
 
-      - name: Docker Hub login karo
+      - name: Docker Hub login 
         uses: docker/login-action@v3.4.0
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: Docker Buildx setup karo
+      - name: Docker Buildx setup 
         uses: docker/setup-buildx-action@v3.10.0
 
-      - name: Backend Docker image build & push karo
+      - name: Backend Docker image build & push
         uses: docker/build-push-action@v6.15.0
         with:
           context: ./backend
@@ -75,7 +75,7 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      - name: Frontend Docker image build & push karo
+      - name: Frontend Docker image build & push 
         uses: docker/build-push-action@v6.15.0
         with:
           context: ./frontend
@@ -90,16 +90,16 @@ jobs:
   # JOB 3: EC2 DEPLOY
   # ============================================
   deploy-to-ec2:
-    name: EC2 Par Deploy Karo
+    name: EC2 Deploy 
     runs-on: ubuntu-latest
     needs: docker-build-push
     if: github.ref == 'refs/heads/main'
 
     steps:
-      - name: Code checkout karo
+      - name: Code checkout 
         uses: actions/checkout@v4.2.2
 
-      - name: docker-compose.yml EC2 par bhejo
+      - name: docker-compose.yml send on EC2
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.EC2_HOST }}
@@ -108,7 +108,7 @@ jobs:
           source: "docker-compose.yml"
           target: "/home/ubuntu/todo-app"
 
-      - name: EC2 par deploy karo (SSH se)
+      - name: EC2  deploy  (SSH )
         uses: appleboy/ssh-action@v1.2.0
         with:
           host: ${{ secrets.EC2_HOST }}
@@ -117,21 +117,22 @@ jobs:
           script: |
             cd /home/ubuntu/todo-app
 
-            # Purane containers band karo
+            # Stop old containers 
             docker compose down --remove-orphans
 
-            # Purani images force delete karo
+            # force delete old images
             docker rmi tusharyadaav/todo-backend:latest 2>/dev/null || true
             docker rmi tusharyadaav/todo-frontend:latest 2>/dev/null || true
 
-            # Docker Hub se bilkul fresh images pull karo
+            #=Pull fresh image from docker hub
             docker pull tusharyadaav/todo-backend:latest
             docker pull tusharyadaav/todo-frontend:latest
 
-            # Nayi images se containers start karo
+            # Start containers from new images
+            source load-secrets.sh
             docker compose up -d
 
-            # Health check — backend ready hone ka wait karo
+            # Health check — wait for backend 
             sleep 15
             echo "Health check..."
             curl -f http://localhost:8080/api/todos/health || exit 1
@@ -152,8 +153,8 @@ jobs:
     steps:
       - name: Success message
         if: needs.deploy-to-ec2.result == 'success'
-        run: echo "✅ Deploy ho gaya! App EC2 par chal raha hai."
+        run: echo "✅ Deploy done."
 
       - name: Failure message
         if: needs.deploy-to-ec2.result == 'failure'
-        run: echo "❌ Deploy fail ho gaya. Logs check karo!"
+        run: echo "❌ Deploy fail . check Logs"
