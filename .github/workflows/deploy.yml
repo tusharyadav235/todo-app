@@ -153,7 +153,7 @@ jobs:
             docker compose up -d
 
             # Wait for backend
-            sleep 20
+            sleep 40
 
             echo "🔍 Running health check..."
             curl -f http://localhost:8080/api/todos/health || exit 1
