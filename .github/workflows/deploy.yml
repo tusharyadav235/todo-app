@@ -99,16 +99,17 @@ jobs:
       - name: Code checkout 
         uses: actions/checkout@v4.2.2
 
-      - name: docker-compose.yml send on EC2
+      # ✅ Send both files (IMPORTANT FIX)
+      - name: Send files to EC2
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}
-          source: "docker-compose.yml"
+          source: "docker-compose.yml,load-secrets.sh"
           target: "/home/ubuntu/todo-app"
 
-      - name: EC2  deploy  (SSH )
+      - name: EC2 Deploy (SSH)
         uses: appleboy/ssh-action@v1.2.0
         with:
           host: ${{ secrets.EC2_HOST }}
@@ -117,28 +118,49 @@ jobs:
           script: |
             cd /home/ubuntu/todo-app
 
-            # Stop old containers 
+            echo "🚀 Starting deployment..."
+
+            # Ensure Docker is running
+            sudo systemctl start docker
+
+            # Fix Docker permissions
+            sudo usermod -aG docker ubuntu || true
+
+            # Check required files
+            if [ ! -f load-secrets.sh ]; then
+              echo "❌ load-secrets.sh not found!"
+              exit 1
+            fi
+
+            # Give execute permission
+            chmod +x load-secrets.sh
+
+            # Load AWS Secrets
+            source load-secrets.sh
+
+            # Stop old containers
             docker compose down --remove-orphans
 
-            # force delete old images
+            # Remove old images (ignore errors)
             docker rmi tusharyadaav/todo-backend:latest 2>/dev/null || true
             docker rmi tusharyadaav/todo-frontend:latest 2>/dev/null || true
 
-            #=Pull fresh image from docker hub
+            # Pull latest images
             docker pull tusharyadaav/todo-backend:latest
             docker pull tusharyadaav/todo-frontend:latest
 
-            # Start containers from new images
-            source load-secrets.sh
+            # Start containers
             docker compose up -d
 
-            # Health check — wait for backend 
-            sleep 15
-            echo "Health check..."
-            curl -f http://localhost:8080/api/todos/health || exit 1
-            echo "Deploy successful!"
+            # Wait for backend
+            sleep 20
 
-            # Dangling images saaf karo
+            echo "🔍 Running health check..."
+            curl -f http://localhost:8080/api/todos/health || exit 1
+
+            echo "✅ Deploy successful!"
+
+            # Cleanup unused images
             docker image prune -f
 
   # ============================================
@@ -157,4 +179,4 @@ jobs:
 
       - name: Failure message
         if: needs.deploy-to-ec2.result == 'failure'
-        run: echo "❌ Deploy fail . check Logs"
+        run: echo "❌ Deploy failed. Check logs."
